@@ -11,7 +11,7 @@ main{max-width:1200px;margin:auto;padding:18px}.toolbar,.bulk-panel{background:#
 button{border:0;border-radius:8px;padding:11px 17px;font-weight:700;font-size:14px;cursor:pointer}.print{background:#3157d5;color:white}.primary{background:#3157d5;color:white}.clear,.secondary{background:#edf0f7;color:#25324a}
 .hint{color:#657086;font-size:12px}.bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:5px}.field label{font-size:12px;font-weight:700;color:#465168}input,textarea{font:inherit;border:1px solid #cbd2df;border-radius:8px;padding:9px;min-width:0;width:100%}.bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .sheet-wrap{overflow:auto;padding:4px 0 20px}.sheet{width:210mm;height:297mm;background:white;margin:0 auto;box-shadow:0 6px 24px #1d2c4a20;padding:18mm 8mm;display:grid;grid-template-columns:repeat(4,45mm);grid-template-rows:repeat(21,10mm);column-gap:3mm;row-gap:2mm;align-content:start;justify-content:start}
-.cell{width:45mm;height:10mm;border:1px dashed #cbd1dd;display:flex;align-items:center;justify-content:center;overflow:hidden}.cell input{border:0;outline:0;width:100%;height:100%;text-align:center;font:700 14pt Arial,sans-serif;color:#111;background:transparent;padding:0 1mm;min-width:0;border-radius:0}.cell input::placeholder{color:#b7bdc9;font-size:9pt;font-weight:400}.print-value{display:none;font:700 14pt Arial,sans-serif;text-align:center;overflow-wrap:anywhere;max-width:100%;line-height:1}
+.cell{width:45mm;height:10mm;border:1px dashed #cbd1dd;display:flex;align-items:center;justify-content:center;overflow:hidden}.cell input{border:0;outline:0;width:100%;height:100%;text-align:center;font:700 var(--sticker-font-size,14pt) Arial,sans-serif;color:#111;background:transparent;padding:0 1mm;min-width:0;border-radius:0}.cell input::placeholder{color:#b7bdc9;font-size:9pt;font-weight:400}.print-value{display:none;font:700 var(--sticker-font-size,14pt) Arial,sans-serif;text-align:center;overflow-wrap:anywhere;max-width:100%;line-height:1}
 @media(max-width:760px){.sheet{margin:0}}
 @media print{@page{size:A4 portrait;margin:0}body{background:white}header,.toolbar,.bulk-panel,.hint-bottom{display:none!important}main{padding:0;margin:0;max-width:none}.sheet-wrap{overflow:visible;padding:0}.sheet{margin:0;box-shadow:none}.cell{border-color:transparent}.cell input{display:none}.print-value{display:block}}
 </style>
@@ -25,6 +25,7 @@ button{border:0;border-radius:8px;padding:11px 17px;font-weight:700;font-size:14
  <div class="bulk-grid">
   <div class="field"><label for="qty">Number of stickers</label><input id="qty" type="number" min="1" max="84" value="23"></div>
   <div class="field"><label for="price">Price for each sticker</label><input id="price" type="text" value="99" placeholder="e.g. 99 or ₹99"></div>
+  <div class="field"><label for="fontSize">Sticker font size (pt)</label><input id="fontSize" type="number" min="5" max="36" step="0.5" value="14"></div>
  </div>
  <div class="bulk-actions"><button class="primary" id="fillBatch">Fill next stickers</button><button class="secondary" id="addBatch">Add batch to list</button></div>
  <div class="field" style="margin-top:12px"><label for="batchList">Batch list (quantity, price — one per line)</label><textarea id="batchList" rows="3" placeholder="23, 99&#10;12, 45"></textarea></div>
@@ -48,6 +49,12 @@ for(let i=0;i<84;i++){
  cell.append(input,value);sheet.append(cell);inputs.push(input);
 }
 function setSticker(i,price){if(i<0||i>=84)return;inputs[i].value=price;inputs[i].dispatchEvent(new Event('input'))}
+function applyFontSize(){
+ const size=Math.max(5,Math.min(36,Number(document.getElementById('fontSize').value)||14));
+ document.documentElement.style.setProperty('--sticker-font-size',size+'pt');
+}
+document.getElementById('fontSize').addEventListener('input',applyFontSize);
+applyFontSize();
 function parseBatches(text){
  const lines=text.split(/\n/).map(x=>x.trim()).filter(Boolean),batches=[];
  for(let n=0;n<lines.length;n++){

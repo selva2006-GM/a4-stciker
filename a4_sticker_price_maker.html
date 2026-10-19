@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A4 Sticker Price Printer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5fa;color:#182033;font:14px system-ui,Arial,sans-serif}
+header{background:#121b30;color:white;padding:22px clamp(14px,3vw,32px)}h1{font-size:25px;margin:0 0 5px}header p{margin:0;color:#c7d0e2}
+main{max-width:1200px;margin:auto;padding:18px}.toolbar,.bulk-panel{background:#fff;border:1px solid #dce1eb;border-radius:12px;padding:15px;margin-bottom:16px}
+.toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+button{border:0;border-radius:8px;padding:11px 17px;font-weight:700;font-size:14px;cursor:pointer}.print{background:#3157d5;color:white}.primary{background:#3157d5;color:white}.clear,.secondary{background:#edf0f7;color:#25324a}
+.hint{color:#657086;font-size:12px}.bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:grid;gap:5px}.field label{font-size:12px;font-weight:700;color:#465168}input,textarea{font:inherit;border:1px solid #cbd2df;border-radius:8px;padding:9px;min-width:0;width:100%}.bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sheet-wrap{overflow:auto;padding:4px 0 20px}.sheet{width:210mm;height:297mm;background:white;margin:0 auto;box-shadow:0 6px 24px #1d2c4a20;padding:18mm 8mm;display:grid;grid-template-columns:repeat(4,45mm);grid-template-rows:repeat(21,10mm);column-gap:3mm;row-gap:2mm;align-content:start;justify-content:start}
+.cell{width:45mm;height:10mm;border:1px dashed #cbd1dd;display:flex;align-items:center;justify-content:center;overflow:hidden}.cell input{border:0;outline:0;width:100%;height:100%;text-align:center;font:700 14pt Arial,sans-serif;color:#111;background:transparent;padding:0 1mm;min-width:0;border-radius:0}.cell input::placeholder{color:#b7bdc9;font-size:9pt;font-weight:400}.print-value{display:none;font:700 14pt Arial,sans-serif;text-align:center;overflow-wrap:anywhere;max-width:100%;line-height:1}
+@media(max-width:760px){.sheet{margin:0}}
+@media print{@page{size:A4 portrait;margin:0}body{background:white}header,.toolbar,.bulk-panel,.hint-bottom{display:none!important}main{padding:0;margin:0;max-width:none}.sheet-wrap{overflow:visible;padding:0}.sheet{margin:0;box-shadow:none}.cell{border-color:transparent}.cell input{display:none}.print-value{display:block}}
+</style>
+</head>
+<body>
+<header><h1>A4 Sticker Price Printer</h1><p>Enter prices individually or fill batches of stickers with the same price.</p></header>
+<main>
+<section class="bulk-panel">
+ <h2 style="margin:0 0 6px;font-size:17px">Fill multiple stickers at once</h2>
+ <p class="hint" style="margin:0 0 12px">Example: quantity <b>23</b>, price <b>99</b> fills the next 23 stickers with ₹99. Add another batch for quantity 12 at ₹45.</p>
+ <div class="bulk-grid">
+  <div class="field"><label for="qty">Number of stickers</label><input id="qty" type="number" min="1" max="84" value="23"></div>
+  <div class="field"><label for="price">Price for each sticker</label><input id="price" type="text" value="99" placeholder="e.g. 99 or ₹99"></div>
+ </div>
+ <div class="bulk-actions"><button class="primary" id="fillBatch">Fill next stickers</button><button class="secondary" id="addBatch">Add batch to list</button></div>
+ <div class="field" style="margin-top:12px"><label for="batchList">Batch list (quantity, price — one per line)</label><textarea id="batchList" rows="3" placeholder="23, 99&#10;12, 45"></textarea></div>
+ <div class="bulk-actions"><button class="primary" id="applyBatches">Apply batch list from first sticker</button><button class="secondary" id="clearBatches">Clear batch list</button></div>
+ <p class="hint">Batches fill from the first sticker onward, in reading order (left to right, then top to bottom). Remaining stickers are left blank. Maximum 84 stickers.</p>
+</section>
+<div class="toolbar">
+ <div><strong>84 stickers · 4 columns × 21 rows · 45 × 10 mm</strong><div class="hint">You can still edit any sticker directly in its box below.</div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="clear" id="clear">Clear all stickers</button><button class="print" id="print">Print A4 sheet</button></div>
+</div>
+<div class="sheet-wrap"><section class="sheet" id="sheet" aria-label="84 sticker input boxes"></section></div>
+<p class="hint hint-bottom">Print settings: A4 · Portrait · Scale 100% / Actual size · Headers and footers off. Print a plain-paper test first to verify alignment.</p>
+</main>
+<script>
+const sheet=document.getElementById('sheet'),inputs=[];
+for(let i=0;i<84;i++){
+ const cell=document.createElement('label');cell.className='cell';
+ const input=document.createElement('input');input.type='text';input.placeholder='Price';input.setAttribute('aria-label','Sticker '+(i+1)+' price');input.autocomplete='off';
+ const value=document.createElement('span');value.className='print-value';
+ input.addEventListener('input',()=>value.textContent=input.value);
+ cell.append(input,value);sheet.append(cell);inputs.push(input);
+}
+function setSticker(i,price){if(i<0||i>=84)return;inputs[i].value=price;inputs[i].dispatchEvent(new Event('input'))}
+function parseBatches(text){
+ const lines=text.split(/\n/).map(x=>x.trim()).filter(Boolean),batches=[];
+ for(let n=0;n<lines.length;n++){
+  const parts=lines[n].split(/[,\t;]+/).map(x=>x.trim());
+  if(parts.length<2){alert('Line '+(n+1)+': enter quantity and price, for example 23, 99');return null}
+  const qty=Number(parts[0]),price=parts.slice(1).join(' ').trim();
+  if(!Number.isInteger(qty)||qty<1||!price){alert('Line '+(n+1)+': quantity must be a positive whole number and price cannot be empty.');return null}
+  batches.push({qty,price});
+ }
+ return batches;
+}
+document.getElementById('fillBatch').addEventListener('click',()=>{
+ const qty=Number(document.getElementById('qty').value),price=document.getElementById('price').value.trim();
+ if(!Number.isInteger(qty)||qty<1||qty>84||!price){alert('Enter a quantity from 1 to 84 and a price.');return}
+ let start=inputs.findIndex(input=>!input.value.trim());if(start<0)start=0;
+ if(start+qty>84){alert('That batch will go past the 84 stickers. Clear some boxes or use a smaller quantity.');return}
+ for(let i=0;i<qty;i++)setSticker(start+i,price);
+});
+document.getElementById('addBatch').addEventListener('click',()=>{
+ const qty=document.getElementById('qty').value,price=document.getElementById('price').value.trim();
+ if(!qty||!price){alert('Enter quantity and price first.');return}
+ const list=document.getElementById('batchList');list.value+=(list.value.trim()?'\n':'')+qty+', '+price;
+});
+document.getElementById('applyBatches').addEventListener('click',()=>{
+ const batches=parseBatches(document.getElementById('batchList').value);if(!batches||!batches.length)return;
+ const total=batches.reduce((sum,b)=>sum+b.qty,0);if(total>84){alert('Your batches total '+total+' stickers. The sheet only has 84.');return}
+ inputs.forEach((_,i)=>setSticker(i,''));let index=0;
+ for(const b of batches)for(let n=0;n<b.qty;n++)setSticker(index++,b.price);
+});
+document.getElementById('clearBatches').addEventListener('click',()=>document.getElementById('batchList').value='');
+document.getElementById('clear').addEventListener('click',()=>inputs.forEach(input=>{input.value='';input.dispatchEvent(new Event('input'))}));
+document.getElementById('print').addEventListener('click',()=>window.print());
+</script>
+</body></html>
